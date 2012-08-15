@@ -1,6 +1,6 @@
 # IEC 61850 GOOSE and Sampled Value Tunnelling using UDP #
 
-## Installation ##
+## Installation using Eclipse ##
 
  - Install MinGW and add `C:\MinGW\bin;` to `PATH` in the Project Properties > C/C++ Build > Environment options. (Other compilers should work too.)
  - In Project Properties > C/C++ Build > Settings > GCC Compiler Includes, set `"${workspace_loc:/${ProjName}/Include}"` as an include path.
