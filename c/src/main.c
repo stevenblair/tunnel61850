@@ -1,5 +1,5 @@
 /**
- * Rapid-prototyping protection schemes with IEC 61850
+ * IEC 61850 Ethernet to UDP bridge
  *
  * Copyright (c) 2012 Steven Blair
  *
@@ -18,116 +18,58 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#if HIGH_LEVEL_INTERFACE == 0
-	#define WPCAP
-	#define HAVE_REMOTE
-	#define WIN32_LEAN_AND_MEAN
+#define REMOVE_ETHERNET_FRAME	1
 
-	#include <pcap.h>
-#endif
-#include "iec61850.h"
-#if HIGH_LEVEL_INTERFACE == 1
 #include "interface.h"
+#include "udp.h"
+
+UDP *udp;
+unsigned char bufOut[2048] = {0};
+
+// filters GOOSE and SV packets which use the recommended MAC address ranges, and forwards via UDP
+void gse_sv_packet_filter(unsigned char *buf, int len) {
+	int lenOut = 0;
+	int offset = 0;
+
+	if (len >= 64) {
+#if REMOVE_ETHERNET_FRAME == 1
+		offset = 14;
+
+		// check for VLAN tag
+		if (buf[12] == 0x81 && buf[13] == 0x00) {
+			offset = 18;
+		}
 #endif
 
-#if HIGH_LEVEL_INTERFACE == 0
+		// GOOSE: 01-0C-CD-01-00-00 to 01-0C-CD-01-01-FF
+		// SV:    01-0C-CD-04-00-00 to 01-0C-CD-04-01-FF
+		if (buf[0] == 0x01 && buf[1] == 0x0C && buf[2] == 0xCD) {
+			if (buf[3] == 0x01 || buf[3] == 0x04) {
+				lenOut = encodeUDP(bufOut, udp, (const char*) &buf[offset], len - offset);
+				printf("SV or GOOSE length %d to %d\n", len, lenOut);
+			}
+		}
 
-#define BUFFER_LENGTH	2048
-
-pcap_t *fp;
-char errbuf[PCAP_ERRBUF_SIZE];
-unsigned char buf[BUFFER_LENGTH] = {0};
-int len = 0;
-
-void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data) {
-	gse_sv_packet_filter((unsigned char *) pkt_data, header->len);
-}
-
-pcap_t *initWinpcap() {
-	pcap_t *fpl;
-    pcap_if_t *alldevs;
-    pcap_if_t *used_if;
-
-    // Retrieve the device list from the local machine
-#ifdef _WIN32
-	if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL /* auth is not needed */, &alldevs, errbuf) == -1) {
-		fprintf(stderr, "Error in pcap_findalldevs_ex: %s\n", errbuf);
-		exit(1);
-	}
-#else
-	if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-		fprintf(stderr, "Error in pcap_findalldevs: %s\n", errbuf);
-		exit(1);
-	}
-#endif
-
-    used_if = alldevs;
-
-#ifdef _WIN32
-    fprintf(stdout, "%s\n", used_if->description);
-#else
-    fprintf(stdout, "%s\n", used_if->name);
-#endif
-    fflush(stdout);
-
-	if ((fpl = pcap_open_live(used_if->name,	// name of the device
-							 65536,				// portion of the packet to capture. It doesn't matter in this case
-							 1,					// promiscuous mode (nonzero means promiscuous)
-							 1000,				// read timeout
-							 errbuf				// error buffer
-							 )) == NULL)
-	{
-		fprintf(stderr, "\nUnable to open the adapter. %s is not supported by WinPcap\n", alldevs->name);
-		exit(2);
-	}
-
-    //pcap_freealldevs(alldevs);
-
-	return fpl;
-}
-#endif
-
-int main() {
-#if HIGH_LEVEL_INTERFACE == 1
-	start();
-
-	gse_send_E1Q1SB1_C1_Performance_buf(1, 512);
-
-	return 0;
-#else
-    int len = 0;
-
-	initialise_iec61850();
-	fp = initWinpcap();
-
-	srand(time(NULL));
-	float valueGSE = (float) rand() / (float) RAND_MAX;
-	float valueSV = (float) rand() / (float) RAND_MAX;
-
-	E1Q1SB1.S1.C1.TVTRa_1.Vol.instMag.f = valueGSE;
-	len = E1Q1SB1.S1.C1.LN0.ItlPositions.send(buf, 0, 512);
-	pcap_sendpacket(fp, buf, len);
-
-	gse_sv_packet_filter(buf, len);
-	printf("GSE test: %s\n", D1Q1SB4.S1.C1.RSYNa_1.gse_inputs_ItlPositions.E1Q1SB1_C1_Positions.C1_TVTR_1_Vol_instMag.f == valueGSE ? "passed" : "failed");
-	fflush(stdout);
-
-	E1Q1SB1.S1.C1.exampleRMXU_1.AmpLocPhsA.instMag.f = valueSV;
-	int i = 0;
-	for (i = 0; i < E1Q1SB1.S1.C1.LN0.rmxuCB.noASDU; i++) {
-		len = E1Q1SB1.S1.C1.LN0.rmxuCB.update(buf);
-
-		if (len > 0) {
-			pcap_sendpacket(fp, buf, len);
-			gse_sv_packet_filter(buf, len);
-
-			printf("SV test: %s\n", D1Q1SB4.S1.C1.exampleMMXU_1.sv_inputs_rmxuCB.E1Q1SB1_C1_rmxu[15].C1_RMXU_1_AmpLocPhsA.instMag.f == valueSV ? "passed" : "failed");
-			fflush(stdout);
+		if (lenOut > 0) {
+			int tempLength = sendPacket(bufOut, lenOut);
+			printf("\tsent length %d\n", tempLength);
 		}
 	}
+}
 
-	pcap_close(fp);
+void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data) {
+    gse_sv_packet_filter((unsigned char *) pkt_data, header->len);
+}
+
+int main() {
+	udp = initUDP();
+
+	start();
+
+	int status = 0;
+	while (status == 0) {
+		status = setCallback(&packet_handler);
+	}
 
 	return 0;
-#endif
 }

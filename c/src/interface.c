@@ -1,19 +1,14 @@
 
 #include "interface.h"
-#include "interfaceSendPacket.h"
-
-//#if HIGH_LEVEL_INTERFACE == 1
-
-int testValue = 0;
 
 unsigned char bufIn[2048] = {0};
-unsigned char bufOut[2048] = {0};
 
 pcap_t *fp;
 char errbuf[PCAP_ERRBUF_SIZE];
 
-void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data) {
-    gse_sv_packet_filter((unsigned char *) pkt_data, header->len);
+
+void default_packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data) {
+	//
 }
 
 pcap_t *init_pcap() {
@@ -56,8 +51,6 @@ pcap_t *init_pcap() {
 }
 
 void start() {
-	initialise_iec61850();	// initialise IEC 61850 library
-
 	fp = init_pcap();		// initialise platform-specific libpcap network interface
 }
 
@@ -65,8 +58,15 @@ void stop() {
 	pcap_close(fp);	// close network interface
 }
 
-int readPacket() {
-	return pcap_loop(fp, 1, packet_handler, NULL);
+
+int sendPacket(buf, len) {
+	return pcap_sendpacket(fp, buf, len);
 }
 
-//#endif
+int readPacket() {
+	return pcap_loop(fp, 1, default_packet_handler, NULL);
+}
+
+int setCallback(void (*packet_handler)(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data)) {
+	return pcap_loop(fp, -1, packet_handler, NULL);
+}
