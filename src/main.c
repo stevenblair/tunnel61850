@@ -32,6 +32,7 @@ void gse_sv_packet_filter(unsigned char *buf, int len) {
 	int offset = 0;
 
 	if (len >= 64) {
+
 #if REMOVE_ETHERNET_FRAME == 1
 		offset = 14;
 
@@ -46,13 +47,11 @@ void gse_sv_packet_filter(unsigned char *buf, int len) {
 		if (buf[0] == 0x01 && buf[1] == 0x0C && buf[2] == 0xCD) {
 			if (buf[3] == 0x01 || buf[3] == 0x04) {
 				lenOut = encodeUDP(bufOut, udp, (const char*) &buf[offset], len - offset);
-				printf("SV or GOOSE length %d to %d\n", len, lenOut);
 			}
 		}
 
 		if (lenOut > 0) {
-			int tempLength = sendPacket(bufOut, lenOut);
-			printf("\tsent length %d\n", tempLength);
+			sendPacket(bufOut, lenOut);
 		}
 	}
 }

@@ -8,6 +8,7 @@
 	#define WIN32_LEAN_AND_MEAN
 	#define LITTLE_ENDIAN
 #endif
+
 #include <pcap.h>
 #include <stdlib.h>
 
@@ -18,7 +19,7 @@ extern pcap_t *fp;
 
 void start();
 void stop();
-int sendPacket(buf, len);
+int sendPacket(unsigned char *buf, int len);
 int readPacket();
 int setCallback(void (*packet_handler)(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data));
 

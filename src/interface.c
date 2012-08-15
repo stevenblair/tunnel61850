@@ -59,7 +59,7 @@ void stop() {
 }
 
 
-int sendPacket(buf, len) {
+int sendPacket(unsigned char *buf, int len) {
 	return pcap_sendpacket(fp, buf, len);
 }
 
