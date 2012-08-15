@@ -1,5 +1,5 @@
 /**
- * IEC 61850 Ethernet to UDP bridge
+ * IEC 61850 Ethernet to UDP tunnel
  *
  * Copyright (c) 2012 Steven Blair
  *
