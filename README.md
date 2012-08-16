@@ -14,9 +14,9 @@
 ## Compile and run using Linux Terminal ##
 
 ```sh
-sudo apt-get install libpcap-dev				# install pcap
+sudo apt-get install libpcap-dev                           # install pcap
 
-gcc -Wall -O3 interface.c main.c -lpcap -o tunnel61850		# compile
-sudo ./tunnel61850						# run
+gcc -Wall -O3 interface.c main.c -lpcap -o tunnel61850     # compile
+sudo ./tunnel61850                                         # run
 ```
 
