@@ -1,4 +1,4 @@
-# IEC 61850 GOOSE and Sampled Value Tunnelling using UDP #
+# IEC 61850 GOOSE and Sampled Value tunnelling using UDP #
 
 ## Installation using Eclipse ##
 

@@ -108,8 +108,6 @@ int encodeIP(unsigned char* data, IP* ip, const char *payload, int payload_lengt
     size += encodeETH(&data[size], ip->eth, payload, payload_length);
     
     ip->length = IP_HEADER_BYTES + UDP_HEADER_BYTES + payload_length;
-    //ip->checksum = 0xd06B;
-    //ip->checksum = 0xcfb4;
     ip->checksum = getIPChecksum(ip);
     
     netmemcpy(&data[size], (const void*) &ip->info, sizeof ip->info);

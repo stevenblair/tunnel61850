@@ -35,7 +35,7 @@ pcap_t *init_pcap() {
     pcap_if_t *alldevs;
     pcap_if_t *used_if;
 
-    /* Retrieve the device list from the local machine */
+    // retrieve the device list from the local machine
 #ifdef _WIN32
     if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL /* auth is not needed */, &alldevs, errbuf) == -1) {
         fprintf(stderr, "Error in pcap_findalldevs_ex: %s\n", errbuf);
@@ -50,7 +50,11 @@ pcap_t *init_pcap() {
 
     used_if = alldevs;
 
+#ifdef _WIN32
     fprintf(stdout, "network interface: %s\n", used_if->description);
+#else
+    fprintf(stdout, "network interface: %s\n", used_if->name);
+#endif
     fflush(stdout);
 
 	if ((fpl = pcap_open_live(used_if->name,	// name of the device
