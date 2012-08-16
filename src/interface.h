@@ -30,6 +30,7 @@
 
 #include <pcap.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern unsigned char bufIn[2048];
 extern unsigned char bufOut[2048];
